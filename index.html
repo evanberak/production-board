@@ -435,6 +435,68 @@
     .mfields dd{padding:2px 18px 10px;}
   }
 
+
+  /* ---------- notepad ---------- */
+  .padwrap{display:grid;grid-template-columns:230px 1fr;gap:0;border:1px solid var(--rule);background:var(--paper);}
+  .padlist{border-right:1px solid var(--rule);display:flex;flex-direction:column;max-height:520px;}
+  .padscroll{overflow:auto;flex:1;}
+  .padnew{
+    appearance:none;width:100%;text-align:left;background:transparent;border:0;
+    border-bottom:1px solid var(--rule);cursor:pointer;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-60);
+    padding:11px 13px;
+  }
+  .padnew:hover{background:var(--stock-2);color:var(--ink);}
+  .padnew:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;}
+  .paditem{
+    display:block;width:100%;text-align:left;background:transparent;border:0;
+    border-bottom:1px solid var(--rule);cursor:pointer;padding:10px 13px;font:inherit;color:var(--ink);
+  }
+  .paditem:hover{background:var(--stock-2);}
+  .paditem:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;}
+  .paditem[aria-current="true"]{background:var(--ink);color:var(--stock);}
+  .paditem b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .paditem span{
+    display:block;font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-30);margin-top:2px;
+  }
+  .paditem[aria-current="true"] span{color:var(--ink-30);}
+  .padempty{padding:22px 13px;font-size:14px;color:var(--ink-60);}
+
+  .padmain{display:flex;flex-direction:column;min-width:0;}
+  .padbar{display:flex;gap:9px;align-items:center;border-bottom:1px solid var(--rule);padding:9px 12px;}
+  .padbar input{
+    flex:1;background:transparent;border:0;font:inherit;font-size:17px;font-weight:700;
+    letter-spacing:-.01em;color:var(--ink);padding:3px 5px;margin:-3px -5px;border-radius:2px;min-width:0;
+  }
+  .padbar input:hover{background:rgba(128,128,128,.12);}
+  .padbar input:focus{outline:0;background:var(--paper);box-shadow:0 0 0 1px var(--ink);}
+  .padbar button{
+    appearance:none;background:0;border:0;cursor:pointer;color:var(--ink-30);
+    font-size:17px;line-height:1;padding:2px 5px;flex:0 0 auto;
+  }
+  .padbar button:hover{color:var(--reg);}
+  .padmain textarea{
+    flex:1;min-height:340px;background:transparent;border:0;padding:15px 16px;
+    font:inherit;font-size:15.5px;line-height:1.7;color:var(--ink);resize:vertical;
+  }
+  .padmain textarea:focus{outline:0;}
+  .padmain textarea::placeholder{color:var(--ink-30);}
+  .padfoot{
+    border-top:1px solid var(--rule);padding:8px 12px;
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-30);
+  }
+  .padblank{padding:60px 20px;color:var(--ink-60);font-size:15px;max-width:40ch;}
+  .padblank b{display:block;color:var(--ink);margin-bottom:5px;}
+
+  @media (max-width:700px){
+    .padwrap{grid-template-columns:1fr;}
+    .padlist{max-height:210px;border-right:0;border-bottom:1px solid var(--rule);}
+  }
+
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
     background:var(--ink);color:var(--stock);padding:9px 14px;
@@ -477,7 +539,7 @@
   }
 
   @media print{
-    .colorbar,.toolbar,.addbar,.rowacts,.foot,.toast,.cats,.panel,.calnav,.strip,.cell-grip,.hintline,.scrim{display:none !important;}
+    .colorbar,.toolbar,.addbar,.rowacts,.foot,.toast,.cats,.panel,.calnav,.strip,.cell-grip,.hintline,.scrim,.padwrap{display:none !important;}
     body{background:#fff;color:#000;}
     .sheet{max-width:none;padding:0;}
     .row{break-inside:avoid;}
@@ -506,6 +568,7 @@
     <button class="btn" id="blockedBtn" aria-pressed="false">Blocked only</button>
     <button class="btn quiet" id="hideDone" aria-pressed="false">Hide done</button>
     <button class="btn quiet" id="standupBtn">Standup</button>
+    <button class="btn quiet" id="notepadBtn" aria-pressed="false">Notepad</button>
     <button class="btn quiet" id="catsBtn" aria-pressed="false">Categories</button>
     <button class="btn quiet" id="bumpBtn">Bump overdue</button>
     <button class="btn quiet" id="fetchBtn">Fetch newest</button>
@@ -525,11 +588,23 @@
       <div><kbd>M</kbd> Month view</div>
       <div><kbd>B</kbd> Blocked only</div>
       <div><kbd>D</kbd> Hide done</div>
+      <div><kbd>W</kbd> Notepad</div>
       <div><kbd>E</kbd> Export backup</div>
       <div><kbd>T</kbd> Dark mode</div>
       <div><kbd>Ctrl</kbd>+<kbd>Z</kbd> Undo delete</div>
       <div><kbd>Esc</kbd> Close panels</div>
       <div><kbd>Enter</kbd> in a row: new job below</div>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="notepad" aria-label="Notepad">
+    <h3>Notepad</h3>
+    <div class="padwrap">
+      <div class="padlist">
+        <button class="padnew" type="button" id="padNew">+ New note</button>
+        <div class="padscroll" id="padList"></div>
+      </div>
+      <div class="padmain" id="padMain"></div>
     </div>
   </section>
 
@@ -653,7 +728,8 @@
   ];
   var STATUS_ORDER = {waiting:0, proof:1, working:2, notstarted:3, done:4};
 
-  var jobs = [], categories = [];
+  var jobs = [], categories = [], notes = [];
+  var padId = null;
   var filter="all", query="", blockedOnly=false, hideDone=false;
   var sortKey="manual", sortDir=1, view="list";
   var calCursor = new Date();
@@ -670,6 +746,7 @@
       if(raw){
         var d = JSON.parse(raw);
         jobs = d.jobs || []; categories = d.categories || [];
+        notes = Array.isArray(d.notes) ? d.notes : [];
         normalizeOrder(); return;
       }
       var old = localStorage.getItem(OLD_KEY);
@@ -684,7 +761,7 @@
     normalizeOrder(); save();
   }
   function save(){
-    try{ localStorage.setItem(KEY, JSON.stringify({version:2, savedAt:new Date().toISOString(), categories:categories, jobs:jobs})); }
+    try{ localStorage.setItem(KEY, JSON.stringify({version:3, savedAt:new Date().toISOString(), categories:categories, jobs:jobs, notes:notes})); }
     catch(e){ toast("Could not save — storage blocked"); }
   }
   function normalizeOrder(){
@@ -1206,6 +1283,120 @@
   }
 
 
+
+  /* ---------------- notepad ---------------- */
+  function nowStamp(){ return new Date().toISOString(); }
+
+  function stampLabel(iso){
+    if(!iso) return "";
+    var d = new Date(iso);
+    var days = Math.round((new Date().setHours(0,0,0,0) - new Date(d).setHours(0,0,0,0))/86400000);
+    var time = d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+    if(days===0) return "Today " + time;
+    if(days===1) return "Yesterday " + time;
+    if(days < 7) return days + " days ago";
+    return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  }
+
+  function noteTitle(n){
+    if(n.title && n.title.trim()) return n.title.trim();
+    var first = (n.body||"").split("\n")[0].trim();
+    return first ? first.slice(0,42) : "Untitled note";
+  }
+
+  function findNote(id){
+    for(var i=0;i<notes.length;i++){ if(notes[i].id===id) return notes[i]; }
+    return null;
+  }
+
+  function newNote(){
+    var n = {id:"n"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+             title:"", body:"", created:nowStamp(), updated:nowStamp()};
+    notes.unshift(n);
+    padId = n.id;
+    save(); renderPad();
+    var t = document.querySelector("#padMain input");
+    if(t) t.focus();
+  }
+
+  function renderPadList(){
+    var el = document.getElementById("padList");
+    if(!notes.length){
+      el.innerHTML = '<div class="padempty">No notes yet. Start one above — good for meeting notes, server paths, or anything that is not a job.</div>';
+      return;
+    }
+    el.innerHTML = notes.map(function(n){
+      return '<button class="paditem" type="button" data-note="'+n.id+'" aria-current="'+(n.id===padId)+'">'
+           + '<b>'+esc(noteTitle(n))+'</b><span>'+esc(stampLabel(n.updated))+'</span></button>';
+    }).join("");
+  }
+
+  function renderPadMain(){
+    var el = document.getElementById("padMain");
+    var n = findNote(padId);
+    if(!n){
+      el.innerHTML = '<div class="padblank"><b>Nothing open.</b>Pick a note on the left, or start a new one. Notes save as you type and travel with your backups.</div>';
+      return;
+    }
+    var words = (n.body||"").trim() ? (n.body.trim().split(/\s+/).length) : 0;
+    el.innerHTML =
+        '<div class="padbar">'
+      +   '<input type="text" id="padTitle" value="'+esc(n.title)+'" placeholder="'+esc(noteTitle(n))+'" aria-label="Note title">'
+      +   '<button type="button" id="padDel" title="Delete note" aria-label="Delete note">&times;</button>'
+      + '</div>'
+      + '<textarea id="padBody" placeholder="Type anything. It saves itself." aria-label="Note body">'+esc(n.body)+'</textarea>'
+      + '<div class="padfoot"><span>'+words+' word'+(words===1?"":"s")+'</span>'
+      +   '<span>Saved '+esc(stampLabel(n.updated))+'</span></div>';
+  }
+
+  function renderPad(){
+    if(padId && !findNote(padId)) padId = null;
+    if(!padId && notes.length) padId = notes[0].id;
+    renderPadList();
+    renderPadMain();
+  }
+
+  document.getElementById("padNew").addEventListener("click", newNote);
+
+  document.getElementById("padList").addEventListener("click", function(e){
+    var b = e.target.closest("[data-note]");
+    if(!b) return;
+    padId = b.dataset.note;
+    renderPad();
+    var body = document.getElementById("padBody");
+    if(body) body.focus();
+  });
+
+  document.getElementById("padMain").addEventListener("input", function(e){
+    var n = findNote(padId); if(!n) return;
+    if(e.target.id==="padTitle") n.title = e.target.value;
+    else if(e.target.id==="padBody") n.body = e.target.value;
+    else return;
+    n.updated = nowStamp();
+    save();
+    clearTimeout(renderPad._t);
+    renderPad._t = setTimeout(renderPadList, 500);
+  });
+
+  document.getElementById("padMain").addEventListener("click", function(e){
+    if(e.target.id!=="padDel") return;
+    var n = findNote(padId); if(!n) return;
+    if(!confirm('Delete "'+noteTitle(n)+'"? This cannot be undone.')) return;
+    notes = notes.filter(function(x){ return x.id!==n.id; });
+    padId = null;
+    save(); renderPad();
+    toast("Note deleted");
+  });
+
+  document.getElementById("notepadBtn").addEventListener("click", function(){
+    var open = document.getElementById("notepad").classList.toggle("hidden");
+    this.setAttribute("aria-pressed", String(!open));
+    if(!open){
+      if(!notes.length) newNote();
+      else { renderPad(); var b=document.getElementById("padBody"); if(b) b.focus(); }
+    }
+  });
+
   /* ---------------- job detail window ---------------- */
   var openId = null;
   var $scrim = document.getElementById("scrim");
@@ -1570,7 +1761,7 @@
 
   /* ---------------- export / import / fetch ---------------- */
   function payload(){
-    return {version:2, savedAt:new Date().toISOString(), categories:categories, jobs:jobs};
+    return {version:3, savedAt:new Date().toISOString(), categories:categories, jobs:jobs, notes:notes};
   }
   document.getElementById("exportBtn").addEventListener("click", doExport);
   function doExport(){
@@ -1619,6 +1810,7 @@
     if(!confirm('Replace the current board with '+norm.jobs.length+' job'+(norm.jobs.length===1?"":"s")+' from '+label+'?\n\nAnything not exported will be lost.')) return;
     jobs=norm.jobs;
     categories = norm.categories || uniqueProjects();
+    if(data && Array.isArray(data.notes)) notes = data.notes;
     normalizeOrder(); save(); render();
     document.getElementById("source").textContent="Loaded "+label;
     toast("Board loaded");
@@ -1674,6 +1866,8 @@
       if(openId){ e.preventDefault(); closeJob(); return; }
       document.getElementById("keys").classList.add("hidden");
       document.getElementById("standup").classList.add("hidden");
+      document.getElementById("notepad").classList.add("hidden");
+      document.getElementById("notepadBtn").setAttribute("aria-pressed","false");
       if(typing) e.target.blur();
       return;
     }
@@ -1687,6 +1881,7 @@
     else if(k==="d"){ document.getElementById("hideDone").click(); }
     else if(k==="e"){ doExport(); }
     else if(k==="t"){ document.getElementById("themeBtn").click(); }
+    else if(k==="w"){ e.preventDefault(); document.getElementById("notepadBtn").click(); }
     else if(k==="?"){ document.getElementById("keys").classList.toggle("hidden"); }
   });
 
@@ -1720,6 +1915,7 @@
 
   load();
   render();
+  renderPad();
   backupNudge();
 })();
 </script>
