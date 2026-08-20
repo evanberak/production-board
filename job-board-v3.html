@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Docket</title>
+<style>
+  :root{
+    --stock:#E8E6E1;
+    --stock-2:#F2F0EC;
+    --ink:#17181A;
+    --ink-60:#5C5F63;
+    --ink-30:#A9ACB0;
+    --rule:#C8C6C0;
+    --cyan:#0B7FA8;
+    --magenta:#B01A5B;
+    --yellow:#B8901A;
+    --reg:#CC3A28;
+    --done:#3F7A4E;
+    --pad:10px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:var(--stock);
+    color:var(--ink);
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:15px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .sheet{
+    max-width:1240px;
+    margin:0 auto;
+    padding:var(--pad) var(--pad) 120px;
+  }
+
+  /* ---------- color bar / status filter ---------- */
+  .colorbar{
+    display:flex;
+    border-bottom:1px solid var(--ink);
+  }
+  .swatch{
+    flex:1 1 0;
+    appearance:none;
+    border:0;
+    border-right:1px solid var(--stock);
+    background:transparent;
+    padding:14px 12px 12px;
+    text-align:left;
+    cursor:pointer;
+    font:inherit;
+    color:var(--ink);
+    transition:background .12s linear;
+  }
+  .swatch:last-child{border-right:0;}
+  .swatch .chip{
+    display:block;height:10px;width:100%;
+    margin-bottom:9px;border:1px solid var(--ink);
+  }
+  .swatch .lab{
+    display:block;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .swatch .ct{
+    display:block;font-size:22px;font-weight:700;
+    letter-spacing:-.02em;line-height:1.1;margin-top:2px;
+  }
+  .swatch:hover{background:var(--stock-2);}
+  .swatch:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;}
+  .swatch[aria-pressed="true"]{background:var(--ink);color:var(--stock);}
+  .swatch[aria-pressed="true"] .chip{border-color:var(--stock);}
+
+  .chip-all{background:repeating-linear-gradient(90deg,var(--cyan) 0 25%,var(--magenta) 25% 50%,var(--yellow) 50% 75%,var(--ink) 75% 100%);}
+  .chip-notstarted{background:var(--stock);}
+  .chip-working{background:var(--cyan);}
+  .chip-waiting{background:var(--magenta);}
+  .chip-proof{background:var(--yellow);}
+  .chip-done{background:var(--done);}
+
+  /* ---------- masthead ---------- */
+  header.mast{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:20px;flex-wrap:wrap;padding:22px 0 16px;
+  }
+  .mast h1{margin:0;font-size:15px;letter-spacing:.34em;text-transform:uppercase;font-weight:700;}
+  .mast .meta{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:11px;letter-spacing:.08em;color:var(--ink-60);text-transform:uppercase;
+  }
+
+  /* ---------- toolbar ---------- */
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:0 0 14px;}
+  .btn{
+    appearance:none;background:transparent;border:1px solid var(--ink);color:var(--ink);
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    padding:7px 12px;cursor:pointer;
+    transition:background .12s linear,color .12s linear;
+  }
+  .btn:hover{background:var(--ink);color:var(--stock);}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .btn.quiet{border-color:var(--rule);color:var(--ink-60);}
+  .btn.quiet:hover{background:var(--ink-60);color:var(--stock);border-color:var(--ink-60);}
+  .btn[aria-pressed="true"]{background:var(--reg);border-color:var(--reg);color:#fff;}
+
+  .search{
+    flex:1 1 200px;min-width:150px;background:transparent;border:0;
+    border-bottom:1px solid var(--rule);padding:7px 2px;font:inherit;font-size:13px;color:var(--ink);
+  }
+  .search:focus{outline:0;border-bottom-color:var(--ink);}
+  .search::placeholder{color:var(--ink-30);}
+
+  /* ---------- table ---------- */
+  .thead,.row{
+    display:grid;
+    grid-template-columns:minmax(0,3fr) minmax(0,1.2fr) 104px 128px minmax(0,1.05fr) minmax(0,2fr) 30px;
+    align-items:start;
+  }
+  .thead{
+    border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);
+    padding:8px 0;position:sticky;top:0;background:var(--stock);z-index:5;
+  }
+  .thead span{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--ink-60);padding:0 10px;user-select:none;
+  }
+  .thead button{
+    appearance:none;background:0;border:0;padding:0;margin:0;
+    font:inherit;color:inherit;cursor:pointer;letter-spacing:inherit;
+  }
+  .thead button:hover{color:var(--ink);}
+  .thead button:focus-visible{outline:1px solid var(--ink);outline-offset:2px;}
+
+  .row{border-bottom:1px solid var(--rule);padding:9px 0;position:relative;}
+  .row:hover{background:var(--stock-2);}
+  .row.is-overdue::before{
+    content:"";position:absolute;left:-14px;top:12px;
+    width:6px;height:6px;border-radius:50%;background:var(--reg);
+  }
+  .row.is-done{opacity:.5;}
+  .row.is-done .cell-task input{text-decoration:line-through;}
+  .row.flash{background:#fff8c9;}
+
+  .cell{padding:0 10px;min-width:0;}
+
+  .row input[type="text"],.row textarea,.row input[type="date"]{
+    width:100%;background:transparent;border:0;padding:3px 4px;margin:-3px -4px;
+    font:inherit;color:var(--ink);resize:none;overflow:hidden;border-radius:2px;
+  }
+  .row input[type="text"]:hover,.row textarea:hover,.row input[type="date"]:hover{background:rgba(0,0,0,.04);}
+  .row input:focus,.row textarea:focus,.row select:focus{
+    outline:0;background:#fff;box-shadow:0 0 0 1px var(--ink);
+  }
+  .cell-task input{font-weight:600;letter-spacing:-.005em;}
+  .cell-notes textarea,.cell-waiting input{font-size:13px;color:var(--ink-60);}
+  .cell-notes textarea:focus,.cell-waiting input:focus{color:var(--ink);}
+  .row input[type="date"]{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:11.5px;color:var(--ink-60);
+  }
+  .row.is-overdue input[type="date"]{color:var(--reg);font-weight:700;}
+
+  .row select{
+    width:100%;background:transparent;border:0;font:inherit;font-size:13px;
+    color:var(--ink-60);padding:3px 2px;margin:-3px -2px;cursor:pointer;border-radius:2px;
+  }
+  .row select:hover{background:rgba(0,0,0,.04);}
+
+  .status{
+    appearance:none;width:100%;text-align:left;border:1px solid var(--rule);
+    background:transparent;cursor:pointer;padding:4px 7px 4px 6px;
+    display:flex;align-items:center;gap:7px;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink);
+  }
+  .status:hover{border-color:var(--ink);}
+  .status:focus-visible{outline:2px solid var(--ink);outline-offset:1px;}
+  .status i{display:block;width:9px;height:9px;flex:0 0 9px;border:1px solid var(--ink);}
+  .s-notstarted i{background:transparent;}
+  .s-working i{background:var(--cyan);border-color:var(--cyan);}
+  .s-waiting i{background:var(--magenta);border-color:var(--magenta);}
+  .s-proof i{background:var(--yellow);border-color:var(--yellow);}
+  .s-done i{background:var(--done);border-color:var(--done);}
+
+  .kill{
+    appearance:none;background:0;border:0;cursor:pointer;
+    color:var(--ink-30);font-size:17px;line-height:1;padding:2px 4px;
+  }
+  .kill:hover{color:var(--reg);}
+  .kill:focus-visible{outline:1px solid var(--ink);}
+
+  /* ---------- add row ---------- */
+  .addbar{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--rule);padding:12px 10px;}
+  .addbar input{flex:1;background:transparent;border:0;font:inherit;font-weight:600;padding:4px 0;color:var(--ink);}
+  .addbar input:focus{outline:0;}
+  .addbar input::placeholder{color:var(--ink-30);font-weight:400;}
+  .addbar .plus{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:11px;color:var(--ink-30);letter-spacing:.1em;
+  }
+
+  .empty{padding:52px 10px;border-bottom:1px solid var(--rule);color:var(--ink-60);font-size:14px;max-width:46ch;}
+  .empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:5px;}
+
+  .foot{
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 10px 0;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-30);
+  }
+
+  /* ---------- calendar ---------- */
+  .calhead{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);padding:12px 10px;
+  }
+  .calhead h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.01em;}
+  .calnav{display:flex;gap:6px;}
+  .dow{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    border-bottom:1px solid var(--rule);
+  }
+  .dow span{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;
+    color:var(--ink-60);padding:7px 8px;
+  }
+  .grid{
+    display:grid;grid-template-columns:repeat(7,1fr);
+    border-left:1px solid var(--rule);
+  }
+  .day{
+    min-height:112px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    padding:6px 7px 8px;background:transparent;
+  }
+  .day.out{background:rgba(0,0,0,.025);}
+  .day.today{background:#fff;box-shadow:inset 0 0 0 2px var(--ink);}
+  .day .dnum{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:11px;color:var(--ink-60);display:block;margin-bottom:5px;
+  }
+  .day.today .dnum{color:var(--ink);font-weight:700;}
+  .day.out .dnum{color:var(--ink-30);}
+  .ev{
+    display:flex;align-items:flex-start;gap:5px;width:100%;text-align:left;
+    background:transparent;border:0;padding:3px 3px;margin:0 -3px 1px;cursor:pointer;
+    font:inherit;font-size:11.5px;line-height:1.25;color:var(--ink);border-radius:2px;
+  }
+  .ev:hover{background:rgba(0,0,0,.06);}
+  .ev:focus-visible{outline:1px solid var(--ink);}
+  .ev i{display:block;width:7px;height:7px;flex:0 0 7px;margin-top:4px;border:1px solid var(--ink);}
+  .ev span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ev.done span{text-decoration:line-through;color:var(--ink-30);}
+  .ev.late span{color:var(--reg);font-weight:600;}
+  .undated{padding:14px 10px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--ink-60);}
+
+  /* ---------- category manager ---------- */
+  .cats{border-bottom:1px solid var(--rule);padding:14px 10px 16px;background:var(--stock-2);}
+  .cats h3{
+    margin:0 0 10px;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-60);font-weight:400;
+  }
+  .catlist{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+  .cat{
+    display:inline-flex;align-items:center;gap:7px;
+    border:1px solid var(--ink);padding:4px 5px 4px 10px;font-size:13px;background:transparent;
+  }
+  .cat b{font-weight:600;}
+  .cat .n{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;color:var(--ink-60);
+  }
+  .cat button{
+    appearance:none;background:0;border:0;cursor:pointer;
+    color:var(--ink-30);font-size:15px;line-height:1;padding:1px 3px;
+  }
+  .cat button:hover{color:var(--reg);}
+  .catadd{display:flex;gap:8px;flex-wrap:wrap;}
+  .catadd input{
+    flex:1 1 200px;min-width:150px;background:transparent;border:0;
+    border-bottom:1px solid var(--rule);padding:6px 2px;font:inherit;font-size:14px;color:var(--ink);
+  }
+  .catadd input:focus{outline:0;border-bottom-color:var(--ink);}
+
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    background:var(--ink);color:var(--stock);padding:9px 16px;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    opacity:0;pointer-events:none;transition:opacity .18s linear;z-index:50;max-width:80vw;text-align:center;
+  }
+  .toast.on{opacity:1;}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:860px){
+    :root{--pad:10px;}
+    .sheet{padding:var(--pad) var(--pad) 90px;}
+    .thead{display:none;}
+    .row{
+      grid-template-columns:1fr auto;
+      grid-template-areas:"task kill" "meta meta" "notes notes";
+      gap:5px 8px;padding:13px 0;
+    }
+    .cell-task{grid-area:task;}
+    .cell-kill{grid-area:kill;}
+    .cell-notes{grid-area:notes;}
+    .cell-project,.cell-due,.cell-status,.cell-waiting{
+      grid-area:meta;display:inline-block;width:auto;padding:0 10px 0 0;
+    }
+    .cell-status{width:132px;}
+    .cell-project{width:130px;}
+    .row.is-overdue::before{left:0;top:6px;}
+    .swatch .ct{font-size:17px;}
+    .swatch{padding:11px 8px 9px;}
+    .swatch .lab{font-size:8.5px;letter-spacing:.08em;}
+    .day{min-height:74px;padding:4px 4px 6px;}
+    .ev span{display:none;}
+    .ev{display:inline-flex;padding:2px;margin:0 1px 1px 0;}
+  }
+
+  @media print{
+    .colorbar,.toolbar,.addbar,.kill,.foot,.toast,.cats,.calnav{display:none !important;}
+    body{background:#fff;}
+    .sheet{max-width:none;padding:0;}
+    .row{break-inside:avoid;}
+    .row input,.row textarea,.row select{border:0 !important;box-shadow:none !important;background:none !important;}
+  }
+
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <nav class="colorbar" id="colorbar" aria-label="Filter by status"></nav>
+
+  <header class="mast">
+    <h1>Job Docket</h1>
+    <div class="meta" id="stamp">—</div>
+  </header>
+
+  <div class="toolbar">
+    <input class="search" id="search" type="search" placeholder="Search tasks, projects, notes…" aria-label="Search">
+    <button class="btn" id="viewBtn">Month view</button>
+    <button class="btn" id="blockedBtn" aria-pressed="false">Blocked only</button>
+    <button class="btn quiet" id="hideDone" aria-pressed="false">Hide done</button>
+    <button class="btn quiet" id="catsBtn" aria-pressed="false">Categories</button>
+    <button class="btn quiet" id="fetchBtn">Fetch newest</button>
+    <button class="btn quiet" id="exportBtn">Export backup</button>
+    <button class="btn quiet" id="importBtn">Import file</button>
+    <button class="btn quiet" id="printBtn">Print</button>
+    <input type="file" id="fileIn" accept="application/json" hidden>
+  </div>
+
+  <!-- category manager -->
+  <section class="cats hidden" id="cats" aria-label="Manage categories">
+    <h3>Categories</h3>
+    <div class="catlist" id="catlist"></div>
+    <div class="catadd">
+      <input id="catInput" type="text" placeholder="New category name, then Enter" aria-label="New category">
+      <button class="btn" id="catAdd">Add category</button>
+    </div>
+  </section>
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="thead" role="row">
+      <span><button type="button" data-sort="task">Task ▾</button></span>
+      <span><button type="button" data-sort="project">Category ▾</button></span>
+      <span><button type="button" data-sort="due">Due ▾</button></span>
+      <span><button type="button" data-sort="status">Status ▾</button></span>
+      <span><button type="button" data-sort="waiting">Waiting on ▾</button></span>
+      <span>Notes</span>
+      <span></span>
+    </div>
+
+    <div class="addbar">
+      <span class="plus">NEW</span>
+      <input id="addInput" type="text" placeholder="Add a job and press Enter" aria-label="New task">
+    </div>
+
+    <div id="rows"></div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div id="calView" class="hidden">
+    <div class="calhead">
+      <h2 id="calTitle">—</h2>
+      <div class="calnav">
+        <button class="btn quiet" id="calPrev">← Prev</button>
+        <button class="btn quiet" id="calToday">This month</button>
+        <button class="btn quiet" id="calNext">Next →</button>
+      </div>
+    </div>
+    <div class="dow" id="dow"></div>
+    <div class="grid" id="calGrid"></div>
+    <div class="undated" id="undated"></div>
+  </div>
+
+  <div class="foot">
+    <span id="count">0 jobs</span>
+    <span id="source">Saved on this computer</span>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var KEY = "jobdocket.v2";
+  var OLD_KEY = "jobdocket.v1";
+
+  /* Where "Fetch newest" looks in your repo. Drop backup .json files in /data
+     and list them in /data/index.json — see the note at the bottom of this file. */
+  var DATA_DIR = "data/";
+  var INDEX_URL = DATA_DIR + "index.json";
+  var FALLBACK_URL = DATA_DIR + "board.json";
+
+  var STATUSES = [
+    {id:"notstarted", label:"Not started",   cls:"s-notstarted", chip:"chip-notstarted"},
+    {id:"working",    label:"Working on it", cls:"s-working",    chip:"chip-working"},
+    {id:"waiting",    label:"Waiting",       cls:"s-waiting",    chip:"chip-waiting"},
+    {id:"proof",      label:"Needs proofing",cls:"s-proof",      chip:"chip-proof"},
+    {id:"done",       label:"Done",          cls:"s-done",       chip:"chip-done"}
+  ];
+  var STATUS_ORDER = {waiting:0, proof:1, working:2, notstarted:3, done:4};
+
+  var jobs = [];
+  var categories = [];
+  var filter = "all", query = "", blockedOnly = false, hideDone = false;
+  var sortKey = "due", sortDir = 1;
+  var view = "list";
+  var calCursor = new Date();
+
+  var $rows = document.getElementById("rows");
+  var $bar  = document.getElementById("colorbar");
+  var $toast= document.getElementById("toast");
+
+  /* ---------------- storage ---------------- */
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){
+        var d = JSON.parse(raw);
+        jobs = d.jobs || [];
+        categories = d.categories || [];
+        return;
+      }
+      var old = localStorage.getItem(OLD_KEY);
+      if(old){
+        jobs = JSON.parse(old) || [];
+        categories = uniqueProjects();
+        save();
+        return;
+      }
+    }catch(e){}
+    var s = seed();
+    jobs = s.jobs; categories = s.categories;
+    save();
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify({version:2, categories:categories, jobs:jobs})); }
+    catch(e){ toast("Could not save — storage blocked"); }
+  }
+  function uniqueProjects(){
+    var out = [];
+    jobs.forEach(function(j){
+      var p = (j.project||"").trim();
+      if(p && out.indexOf(p)===-1) out.push(p);
+    });
+    return out;
+  }
+
+  function uid(){ return "j"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+  function seed(){
+    var t = new Date();
+    function plus(n){
+      var d = new Date(t.getFullYear(), t.getMonth(), t.getDate()+n);
+      return iso(d);
+    }
+    return {
+      categories:["Brochure","Contractor board","Group 52","Labels","Admin"],
+      jobs:[
+        {id:uid(), task:"Tonalita brochure updates", project:"Brochure", due:plus(1), status:"waiting", waiting:"Charts", notes:"Blocked until chart updates land."},
+        {id:uid(), task:"Iridian brochure updates", project:"Brochure", due:plus(2), status:"waiting", waiting:"Data", notes:"Pending images."},
+        {id:uid(), task:"Contractor board — Group 4 edits", project:"Contractor board", due:plus(4), status:"working", waiting:"", notes:""},
+        {id:uid(), task:"Galacia brochure", project:"Brochure", due:plus(4), status:"working", waiting:"", notes:"No folder on server as of 8/14."},
+        {id:uid(), task:"Positano — tech specs", project:"Group 52", due:plus(-1), status:"proof", waiting:"", notes:"Everything but tech specs is done."},
+        {id:uid(), task:"Aosta — tech specs", project:"Group 52", due:plus(-1), status:"proof", waiting:"", notes:"Everything but tech specs is done."},
+        {id:uid(), task:"Cuadros — tech specs", project:"Group 52", due:plus(-1), status:"proof", waiting:"", notes:"Everything but tech specs is done."},
+        {id:uid(), task:"Hubspot training", project:"Admin", due:plus(1), status:"working", waiting:"", notes:""},
+        {id:uid(), task:"Sustainability labels + binder labels 50.5/51", project:"Labels", due:plus(1), status:"notstarted", waiting:"", notes:""}
+      ]
+    };
+  }
+
+  /* ---------------- helpers ---------------- */
+  function iso(d){
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function todayISO(){ return iso(new Date()); }
+  function isOverdue(j){ return !!j.due && j.status!=="done" && j.due < todayISO(); }
+  function statusOf(id){
+    for(var i=0;i<STATUSES.length;i++){ if(STATUSES[i].id===id) return STATUSES[i]; }
+    return STATUSES[0];
+  }
+  function toast(msg){
+    $toast.textContent = msg;
+    $toast.classList.add("on");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ $toast.classList.remove("on"); }, 2600);
+  }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
+    });
+  }
+  function find(id){
+    for(var i=0;i<jobs.length;i++){ if(jobs[i].id===id) return jobs[i]; }
+    return null;
+  }
+
+  /* ---------------- color bar ---------------- */
+  function renderBar(){
+    var counts = {all:0};
+    STATUSES.forEach(function(s){ counts[s.id]=0; });
+    jobs.forEach(function(j){
+      counts.all++;
+      if(counts[j.status]!==undefined) counts[j.status]++;
+    });
+    var items = [{id:"all", label:"All jobs", chip:"chip-all"}].concat(STATUSES);
+    $bar.innerHTML = items.map(function(s){
+      return '<button class="swatch" type="button" data-filter="'+s.id+'" aria-pressed="'+(filter===s.id)+'">'
+           +   '<span class="chip '+s.chip+'"></span>'
+           +   '<span class="lab">'+esc(s.label)+'</span>'
+           +   '<span class="ct">'+counts[s.id]+'</span>'
+           + '</button>';
+    }).join("");
+  }
+
+  /* ---------------- categories ---------------- */
+  function renderCats(){
+    var counts = {};
+    jobs.forEach(function(j){
+      var p=(j.project||"").trim();
+      if(p) counts[p]=(counts[p]||0)+1;
+    });
+    var el = document.getElementById("catlist");
+    if(!categories.length){
+      el.innerHTML = '<span style="font-size:13px;color:var(--ink-60)">No categories yet. Add one below.</span>';
+      return;
+    }
+    el.innerHTML = categories.map(function(c,i){
+      return '<span class="cat"><b>'+esc(c)+'</b><span class="n">'+(counts[c]||0)+'</span>'
+           + '<button type="button" data-cat="'+i+'" aria-label="Delete category '+esc(c)+'">×</button></span>';
+    }).join("");
+  }
+
+  function addCategory(){
+    var inp = document.getElementById("catInput");
+    var v = inp.value.trim();
+    if(!v) return;
+    if(categories.some(function(c){ return c.toLowerCase()===v.toLowerCase(); })){
+      toast("That category already exists"); return;
+    }
+    categories.push(v);
+    inp.value = "";
+    save(); render();
+    toast("Category added");
+  }
+
+  function deleteCategory(i){
+    var name = categories[i];
+    var used = jobs.filter(function(j){ return j.project===name; }).length;
+    var msg = used
+      ? 'Delete "'+name+'"? '+used+' job'+(used===1?"":"s")+' will be left without a category. The jobs themselves stay.'
+      : 'Delete "'+name+'"?';
+    if(!confirm(msg)) return;
+    categories.splice(i,1);
+    jobs.forEach(function(j){ if(j.project===name) j.project=""; });
+    save(); render();
+    toast("Category deleted");
+  }
+
+  /* ---------------- list view ---------------- */
+  function visible(){
+    var q = query.trim().toLowerCase();
+    var list = jobs.filter(function(j){
+      if(filter!=="all" && j.status!==filter) return false;
+      if(hideDone && j.status==="done") return false;
+      if(blockedOnly && !(j.status==="waiting" || (j.waiting||"").trim())) return false;
+      if(q){
+        var hay = (j.task+" "+j.project+" "+j.notes+" "+j.waiting).toLowerCase();
+        if(hay.indexOf(q)===-1) return false;
+      }
+      return true;
+    });
+    list.sort(function(a,b){
+      var av,bv;
+      if(sortKey==="due"){ av=a.due||"9999-99-99"; bv=b.due||"9999-99-99"; }
+      else if(sortKey==="status"){ av=STATUS_ORDER[a.status]; bv=STATUS_ORDER[b.status]; }
+      else { av=(a[sortKey]||"").toLowerCase(); bv=(b[sortKey]||"").toLowerCase(); }
+      if(av<bv) return -1*sortDir;
+      if(av>bv) return  1*sortDir;
+      return 0;
+    });
+    return list;
+  }
+
+  function catOptions(sel){
+    var opts = '<option value="">— none —</option>';
+    var known = false;
+    categories.forEach(function(c){
+      if(c===sel) known = true;
+      opts += '<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(c)+'</option>';
+    });
+    if(sel && !known) opts += '<option value="'+esc(sel)+'" selected>'+esc(sel)+' (unlisted)</option>';
+    return opts;
+  }
+
+  function rowHTML(j){
+    var s = statusOf(j.status);
+    var cls = "row" + (isOverdue(j)?" is-overdue":"") + (j.status==="done"?" is-done":"");
+    return '<div class="'+cls+'" data-id="'+j.id+'">'
+      + '<div class="cell cell-task"><input type="text" data-f="task" value="'+esc(j.task)+'" placeholder="Untitled job" aria-label="Task"></div>'
+      + '<div class="cell cell-project"><select data-f="project" aria-label="Category">'+catOptions(j.project)+'</select></div>'
+      + '<div class="cell cell-due"><input type="date" data-f="due" value="'+esc(j.due)+'" aria-label="Due date"></div>'
+      + '<div class="cell cell-status"><button type="button" class="status '+s.cls+'" data-act="cycle" aria-label="Status: '+esc(s.label)+'. Click to change."><i></i>'+esc(s.label)+'</button></div>'
+      + '<div class="cell cell-waiting"><input type="text" data-f="waiting" value="'+esc(j.waiting)+'" placeholder="—" aria-label="Waiting on"></div>'
+      + '<div class="cell cell-notes"><textarea data-f="notes" rows="1" placeholder="—" aria-label="Notes">'+esc(j.notes)+'</textarea></div>'
+      + '<div class="cell cell-kill"><button type="button" class="kill" data-act="del" aria-label="Delete job">×</button></div>'
+      + '</div>';
+  }
+
+  function autosize(ta){ ta.style.height="auto"; ta.style.height=ta.scrollHeight+"px"; }
+
+  function renderList(){
+    var list = visible();
+    if(!list.length){
+      $rows.innerHTML = '<div class="empty"><b>Nothing here.</b>'
+        + (jobs.length ? 'No jobs match the current filter. Clear the search or pick “All jobs” above.'
+                       : 'Add your first job in the field above. Everything you type saves as you go.')
+        + '</div>';
+    } else {
+      $rows.innerHTML = list.map(rowHTML).join("");
+      $rows.querySelectorAll("textarea").forEach(autosize);
+    }
+  }
+
+  /* ---------------- calendar view ---------------- */
+  var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  function renderCal(){
+    document.getElementById("dow").innerHTML = DOW.map(function(d){ return "<span>"+d+"</span>"; }).join("");
+
+    var y = calCursor.getFullYear(), m = calCursor.getMonth();
+    document.getElementById("calTitle").textContent =
+      calCursor.toLocaleDateString(undefined,{month:"long", year:"numeric"});
+
+    var first = new Date(y, m, 1);
+    var start = new Date(y, m, 1 - first.getDay());
+    var byDate = {};
+    jobs.forEach(function(j){
+      if(!j.due) return;
+      if(hideDone && j.status==="done") return;
+      (byDate[j.due] = byDate[j.due] || []).push(j);
+    });
+
+    var today = todayISO();
+    var html = "";
+    for(var i=0;i<42;i++){
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
+      var key = iso(d);
+      var out = d.getMonth()!==m;
+      var cls = "day" + (out?" out":"") + (key===today?" today":"");
+      var evs = (byDate[key]||[]).sort(function(a,b){
+        return STATUS_ORDER[a.status]-STATUS_ORDER[b.status];
+      });
+      html += '<div class="'+cls+'">'
+            +   '<span class="dnum">'+d.getDate()+'</span>'
+            +   evs.map(function(j){
+                  var s = statusOf(j.status);
+                  var ec = "ev "+(j.status==="done"?"done":"")+(isOverdue(j)?" late":"");
+                  return '<button type="button" class="'+ec+'" data-goto="'+j.id+'" title="'+esc(j.task)+' — '+esc(s.label)+'">'
+                       + '<i class="'+s.cls.replace("s-","chip-")+'" style="background:'+swatchColor(j.status)+';border-color:'+swatchColor(j.status)+'"></i>'
+                       + '<span>'+esc(j.task)+'</span></button>';
+                }).join("")
+            + '</div>';
+    }
+    document.getElementById("calGrid").innerHTML = html;
+
+    var undated = jobs.filter(function(j){ return !j.due && !(hideDone && j.status==="done"); });
+    document.getElementById("undated").innerHTML = undated.length
+      ? '<b>No due date ('+undated.length+'):</b> ' + undated.map(function(j){
+          return '<button type="button" class="ev" data-goto="'+j.id+'" style="display:inline-flex;width:auto;max-width:230px"><i style="background:'+swatchColor(j.status)+';border-color:'+swatchColor(j.status)+'"></i><span>'+esc(j.task)+'</span></button>';
+        }).join(" ")
+      : 'Every job has a due date.';
+  }
+
+  function swatchColor(id){
+    return {notstarted:"transparent", working:"#0B7FA8", waiting:"#B01A5B", proof:"#B8901A", done:"#3F7A4E"}[id] || "transparent";
+  }
+
+  /* ---------------- render ---------------- */
+  function render(){
+    renderBar();
+    renderCats();
+    if(view==="list"){ renderList(); } else { renderCal(); }
+
+    document.getElementById("listView").classList.toggle("hidden", view!=="list");
+    document.getElementById("calView").classList.toggle("hidden", view!=="cal");
+    document.getElementById("viewBtn").textContent = view==="list" ? "Month view" : "List view";
+
+    var n = jobs.length, over = jobs.filter(isOverdue).length;
+    document.getElementById("count").textContent =
+      n+" job"+(n===1?"":"s")+(over?" · "+over+" overdue":"");
+    document.getElementById("stamp").textContent =
+      new Date().toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  }
+
+  /* ---------------- events ---------------- */
+  $bar.addEventListener("click", function(e){
+    var b = e.target.closest("[data-filter]");
+    if(!b) return;
+    filter = b.dataset.filter;
+    if(view!=="list"){ view="list"; }
+    render();
+  });
+
+  document.getElementById("addInput").addEventListener("keydown", function(e){
+    if(e.key!=="Enter") return;
+    var v = this.value.trim();
+    if(!v) return;
+    jobs.unshift({id:uid(), task:v, project:"", due:"", status:"notstarted", waiting:"", notes:""});
+    this.value="";
+    save(); render();
+  });
+
+  $rows.addEventListener("input", function(e){
+    var f = e.target.dataset.f;
+    if(!f) return;
+    var row = e.target.closest(".row");
+    var j = find(row.dataset.id);
+    if(!j) return;
+    j[f] = e.target.value;
+    if(e.target.tagName==="TEXTAREA") autosize(e.target);
+    if(f==="due") row.classList.toggle("is-overdue", isOverdue(j));
+    save();
+    if(f==="project") renderCats();
+  });
+
+  $rows.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-act]");
+    if(!btn) return;
+    var row = btn.closest(".row");
+    var j = find(row.dataset.id);
+    if(!j) return;
+    if(btn.dataset.act==="cycle"){
+      var i = STATUSES.findIndex(function(s){ return s.id===j.status; });
+      j.status = STATUSES[(i+1)%STATUSES.length].id;
+      save(); render();
+    }
+    if(btn.dataset.act==="del"){
+      jobs = jobs.filter(function(x){ return x.id!==j.id; });
+      save(); render();
+      toast("Job deleted");
+    }
+  });
+
+  document.getElementById("catlist").addEventListener("click", function(e){
+    var b = e.target.closest("[data-cat]");
+    if(b) deleteCategory(parseInt(b.dataset.cat,10));
+  });
+  document.getElementById("catAdd").addEventListener("click", addCategory);
+  document.getElementById("catInput").addEventListener("keydown", function(e){
+    if(e.key==="Enter") addCategory();
+  });
+
+  document.getElementById("catsBtn").addEventListener("click", function(){
+    var open = document.getElementById("cats").classList.toggle("hidden");
+    this.setAttribute("aria-pressed", String(!open));
+    if(!open) document.getElementById("catInput").focus();
+  });
+
+  document.getElementById("viewBtn").addEventListener("click", function(){
+    view = (view==="list") ? "cal" : "list";
+    if(view==="cal") calCursor = new Date();
+    render();
+  });
+
+  document.getElementById("calPrev").addEventListener("click", function(){
+    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()-1, 1); renderCal();
+  });
+  document.getElementById("calNext").addEventListener("click", function(){
+    calCursor = new Date(calCursor.getFullYear(), calCursor.getMonth()+1, 1); renderCal();
+  });
+  document.getElementById("calToday").addEventListener("click", function(){
+    calCursor = new Date(); renderCal();
+  });
+
+  document.getElementById("calView").addEventListener("click", function(e){
+    var b = e.target.closest("[data-goto]");
+    if(!b) return;
+    var id = b.dataset.goto;
+    view = "list"; filter = "all"; query = "";
+    document.getElementById("search").value = "";
+    render();
+    var row = $rows.querySelector('[data-id="'+id+'"]');
+    if(row){
+      row.scrollIntoView({block:"center", behavior:"smooth"});
+      row.classList.add("flash");
+      setTimeout(function(){ row.classList.remove("flash"); }, 1400);
+      var inp = row.querySelector('[data-f="task"]');
+      if(inp) inp.focus();
+    }
+  });
+
+  document.getElementById("search").addEventListener("input", function(){
+    query = this.value;
+    if(view!=="list") view="list";
+    render();
+  });
+
+  document.getElementById("blockedBtn").addEventListener("click", function(){
+    blockedOnly = !blockedOnly;
+    this.setAttribute("aria-pressed", String(blockedOnly));
+    if(view!=="list") view="list";
+    render();
+  });
+
+  document.getElementById("hideDone").addEventListener("click", function(){
+    hideDone = !hideDone;
+    this.setAttribute("aria-pressed", String(hideDone));
+    this.textContent = hideDone ? "Show done" : "Hide done";
+    render();
+  });
+
+  document.querySelectorAll("[data-sort]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var k = this.dataset.sort;
+      sortDir = (sortKey===k) ? -sortDir : 1;
+      sortKey = k;
+      document.querySelectorAll("[data-sort]").forEach(function(x){
+        x.textContent = x.textContent.replace(/[▾▴]/,"▾");
+      });
+      this.textContent = this.textContent.replace(/[▾▴]/, sortDir===1?"▾":"▴");
+      render();
+    });
+  });
+
+  document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+
+  /* ---------------- export / import / fetch ---------------- */
+  function payload(){
+    return {version:2, savedAt:new Date().toISOString(), categories:categories, jobs:jobs};
+  }
+
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify(payload(),null,2)], {type:"application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "board-" + todayISO() + ".json";
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    toast("Backup downloaded — commit it to /data");
+  });
+
+  document.getElementById("importBtn").addEventListener("click", function(){
+    document.getElementById("fileIn").click();
+  });
+
+  document.getElementById("fileIn").addEventListener("change", function(){
+    var f = this.files && this.files[0];
+    this.value = "";
+    if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try{ adopt(JSON.parse(r.result), f.name); }
+      catch(err){ toast("That file isn’t a valid backup"); }
+    };
+    r.readAsText(f);
+  });
+
+  function normalize(data){
+    var arr, cats;
+    if(Array.isArray(data)){ arr = data; cats = null; }
+    else if(data && Array.isArray(data.jobs)){ arr = data.jobs; cats = data.categories || null; }
+    else throw new Error("bad shape");
+
+    var out = arr.map(function(j){
+      return {
+        id: j.id || uid(),
+        task: j.task || "",
+        project: j.project || "",
+        due: j.due || "",
+        status: statusOf(j.status).id,
+        waiting: j.waiting || "",
+        notes: j.notes || ""
+      };
+    });
+    return {jobs:out, categories:cats};
+  }
+
+  function adopt(data, label){
+    var norm = normalize(data);
+    if(!confirm('Replace the current board with '+norm.jobs.length+' job'+(norm.jobs.length===1?"":"s")+' from '+label+'?\n\nAnything you have not exported will be lost.')) return;
+    jobs = norm.jobs;
+    if(norm.categories){ categories = norm.categories; }
+    else { categories = uniqueProjects(); }
+    save(); render();
+    document.getElementById("source").textContent = "Loaded " + label;
+    toast("Board loaded");
+  }
+
+  document.getElementById("fetchBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    var was = btn.textContent;
+    btn.textContent = "Fetching…";
+
+    function done(){ btn.disabled=false; btn.textContent=was; }
+
+    if(location.protocol === "file:"){
+      toast("Fetch only works on the hosted site, not a local file");
+      done(); return;
+    }
+
+    fetch(INDEX_URL, {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error("no index"); return r.json(); })
+      .then(function(list){
+        if(!Array.isArray(list) || !list.length) throw new Error("empty index");
+        var entries = list.map(function(e){
+          return typeof e === "string" ? {file:e, savedAt:null} : e;
+        }).filter(function(e){ return e && e.file; });
+        entries.sort(function(a,b){
+          var av = a.savedAt || a.file, bv = b.savedAt || b.file;
+          return av < bv ? 1 : av > bv ? -1 : 0;
+        });
+        var newest = entries[0];
+        return fetch(DATA_DIR + newest.file, {cache:"no-store"}).then(function(r){
+          if(!r.ok) throw new Error("missing "+newest.file);
+          return r.json().then(function(d){ return {data:d, name:newest.file}; });
+        });
+      })
+      .catch(function(){
+        return fetch(FALLBACK_URL, {cache:"no-store"}).then(function(r){
+          if(!r.ok) throw new Error("no board.json");
+          return r.json().then(function(d){ return {data:d, name:"board.json"}; });
+        });
+      })
+      .then(function(res){ adopt(res.data, res.name); done(); })
+      .catch(function(){
+        toast("Nothing found in /data — add board.json to your repo");
+        done();
+      });
+  });
+
+  window.addEventListener("beforeunload", save);
+
+  load();
+  render();
+})();
+</script>
+
+<!--
+  ============================================================
+  FETCH NEWEST — how to set it up in your GitHub repo
+  ============================================================
+
+  Repo layout:
+
+    index.html          <- this file
+    data/
+      index.json        <- optional list of backups (newest wins)
+      board-2026-08-20.json
+      board-2026-08-27.json
+
+  Simplest setup: skip index.json entirely. Just commit one file
+  named data/board.json and press "Fetch newest" — it falls back
+  to that file automatically.
+
+  Keeping history: commit each export under its own name and list
+  them in data/index.json like this:
+
+    [
+      { "file": "board-2026-08-27.json", "savedAt": "2026-08-27" },
+      { "file": "board-2026-08-20.json", "savedAt": "2026-08-20" }
+    ]
+
+  The button reads that list, picks the newest savedAt, and loads it.
+  Order in the file does not matter.
+
+  Note: "Fetch newest" needs a real web server, so it works on
+  Netlify but not when you open the file from your desktop.
+-->
+</body>
+</html>
