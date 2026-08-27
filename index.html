@@ -138,34 +138,31 @@
   .thead{
     border-top:2px solid var(--ink);border-bottom:1px solid var(--ink);
     padding:8px 0;position:sticky;top:0;background:var(--stock);z-index:5;
+    overflow:visible;
   }
   .thead span{
     font-family:"SFMono-Regular",Menlo,Consolas,monospace;
     font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--ink-60);padding:0 9px;user-select:none;
-    position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    position:relative;white-space:nowrap;overflow:visible;
   }
+
+  /* spreadsheet grid lines — drawn on the cells so nothing can clip them */
+  .thead > span + span{border-left:1px solid var(--ink-30);}
+  .row > .cell + .cell{border-left:1px solid var(--rule);}
+  .thead > span:first-child + span{border-left:0;}
+  .row > .cell:first-child + .cell{border-left:0;}
+
   .rz{
-    position:absolute;top:-8px;bottom:-8px;right:-6px;width:13px;
-    cursor:col-resize;z-index:6;
-    display:flex;align-items:center;justify-content:center;
+    position:absolute;top:-8px;bottom:-8px;right:-7px;width:14px;
+    cursor:col-resize;z-index:7;
   }
-  /* always-visible divider, like a spreadsheet */
+  /* thickens the existing divider on hover */
   .rz::before{
-    content:"";position:absolute;top:0;bottom:0;left:6px;width:1px;
-    background:var(--rule);transition:background .1s linear,width .1s linear;
+    content:"";position:absolute;top:0;bottom:0;left:6px;width:3px;
+    background:transparent;transition:background .1s linear;
   }
-  /* grip dots that appear on hover */
-  .rz::after{
-    content:"⋮";position:absolute;line-height:1;font-size:13px;
-    color:var(--stock);background:var(--ink);
-    padding:2px 1px;border-radius:2px;
-    opacity:0;transform:scale(.7);transition:opacity .1s linear,transform .1s linear;
-    pointer-events:none;
-  }
-  .thead span:hover .rz::before{background:var(--ink-30);}
-  .rz:hover::before,.rz.on::before{background:var(--ink);width:3px;left:5px;}
-  .rz:hover::after,.rz.on::after{opacity:1;transform:scale(1);}
+  .rz:hover::before,.rz.on::before{background:var(--ink);}
 
   /* full-height guide line while dragging */
   .rzguide{
@@ -753,7 +750,6 @@
       <span class="plus">NEW</span>
       <input id="addInput" type="text" placeholder="Add a job and press Enter" aria-label="New task">
     </div>
-    <div class="hintline">Try: Galacia brochure #Brochure @Data !friday &nbsp;·&nbsp; drag the lines between column headers to resize, double-click to reset</div>
 
     <div id="rows"></div>
   </div>
@@ -1274,6 +1270,7 @@
 
   /* ---------------- render ---------------- */
   function render(){
+    buildHandles();
     renderBar(); renderStrip(); renderCats();
     if(view==="list") renderList(); else renderCal();
     document.getElementById("listView").classList.toggle("hidden", view!=="list");
