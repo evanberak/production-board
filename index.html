@@ -146,14 +146,40 @@
     position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   .rz{
-    position:absolute;top:-8px;bottom:-8px;right:-3px;width:7px;
+    position:absolute;top:-8px;bottom:-8px;right:-6px;width:13px;
     cursor:col-resize;z-index:6;
+    display:flex;align-items:center;justify-content:center;
   }
+  /* always-visible divider, like a spreadsheet */
+  .rz::before{
+    content:"";position:absolute;top:0;bottom:0;left:6px;width:1px;
+    background:var(--rule);transition:background .1s linear,width .1s linear;
+  }
+  /* grip dots that appear on hover */
   .rz::after{
-    content:"";position:absolute;top:6px;bottom:6px;left:3px;width:1px;background:var(--rule);
+    content:"⋮";position:absolute;line-height:1;font-size:13px;
+    color:var(--stock);background:var(--ink);
+    padding:2px 1px;border-radius:2px;
+    opacity:0;transform:scale(.7);transition:opacity .1s linear,transform .1s linear;
+    pointer-events:none;
   }
-  .rz:hover::after,.rz.on::after{background:var(--ink);width:2px;}
-  body.resizing{cursor:col-resize;user-select:none;}
+  .thead span:hover .rz::before{background:var(--ink-30);}
+  .rz:hover::before,.rz.on::before{background:var(--ink);width:3px;left:5px;}
+  .rz:hover::after,.rz.on::after{opacity:1;transform:scale(1);}
+
+  /* full-height guide line while dragging */
+  .rzguide{
+    position:fixed;top:0;bottom:0;width:2px;background:var(--ink);
+    z-index:80;pointer-events:none;opacity:.85;
+  }
+  .rzsize{
+    position:fixed;z-index:81;pointer-events:none;
+    background:var(--ink);color:var(--stock);
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10.5px;letter-spacing:.08em;padding:4px 8px;border-radius:2px;
+    transform:translateX(8px);
+  }
+  body.resizing,body.resizing *{cursor:col-resize !important;user-select:none !important;}
   .thead button{appearance:none;background:0;border:0;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;letter-spacing:inherit;}
   .thead button:hover{color:var(--ink);}
   .thead button:focus-visible{outline:1px solid var(--ink);outline-offset:2px;}
@@ -542,6 +568,37 @@
   .arcbtns{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap;}
   .arcscroll{max-height:330px;overflow:auto;}
 
+
+  /* ---------- status dropdown ---------- */
+  .status{position:relative;}
+  .status::after{
+    content:"";position:absolute;right:8px;top:50%;
+    width:0;height:0;margin-top:-1px;
+    border-left:4px solid transparent;border-right:4px solid transparent;
+    border-top:5px solid currentColor;opacity:.75;
+  }
+  .status{padding-right:20px;}
+
+  .stmenu{
+    position:fixed;z-index:70;min-width:190px;
+    background:var(--stock);border:1px solid var(--ink);
+    box-shadow:0 12px 34px rgba(0,0,0,.26);padding:4px;
+  }
+  .stmenu button{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    appearance:none;background:transparent;border:0;cursor:pointer;
+    padding:8px 9px;font:inherit;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;
+    color:var(--ink);border-radius:3px;
+  }
+  .stmenu button:hover,.stmenu button:focus-visible{outline:0;background:rgba(128,128,128,.18);}
+  .stmenu button i{
+    display:block;width:26px;height:16px;flex:0 0 26px;border-radius:3px;
+  }
+  .stmenu button[aria-current="true"]{background:rgba(128,128,128,.14);}
+  .stmenu button[aria-current="true"]::after{content:"✓";margin-left:auto;opacity:.6;}
+
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
     background:var(--ink);color:var(--stock);padding:9px 14px;
@@ -639,7 +696,8 @@
       <div><kbd>T</kbd> Dark mode</div>
       <div><kbd>Ctrl</kbd>+<kbd>Z</kbd> Undo delete</div>
       <div><kbd>Esc</kbd> Close panels</div>
-      <div>Drag column edges to resize</div>
+      <div>Drag header dividers to resize</div>
+      <div>Double-click a divider to reset it</div>
       <div><kbd>Enter</kbd> in a row: new job below</div>
     </div>
   </section>
@@ -695,7 +753,7 @@
       <span class="plus">NEW</span>
       <input id="addInput" type="text" placeholder="Add a job and press Enter" aria-label="New task">
     </div>
-    <div class="hintline">Try: Galacia brochure #Brochure @Data !friday</div>
+    <div class="hintline">Try: Galacia brochure #Brochure @Data !friday &nbsp;·&nbsp; drag the lines between column headers to resize, double-click to reset</div>
 
     <div id="rows"></div>
   </div>
@@ -1102,7 +1160,7 @@
       + '<div class="cell cell-due"><input type="date" data-f="due" value="'+esc(j.due)+'" aria-label="Due date">'
       +   (j.due&&j.status!=="done" ? '<span class="due-rel">'+esc(relDue(j.due))+'</span>' : '')
       + '</div>'
-      + '<div class="cell cell-status"><button type="button" class="status '+s.cls+'" data-act="cycle" aria-label="Status: '+esc(s.label)+'. Click to change."><i></i>'+esc(s.label)+'</button>'+age+'</div>'
+      + '<div class="cell cell-status"><button type="button" class="status '+s.cls+'" data-act="status" aria-haspopup="listbox" aria-label="Status: '+esc(s.label)+'. Click to change."><i></i>'+esc(s.label)+'</button>'+age+'</div>'
       + '<div class="cell cell-waiting"><input type="text" data-f="waiting" value="'+esc(j.waiting)+'" placeholder="—" aria-label="Waiting on"></div>'
       + '<div class="cell cell-notes">'+noteLine(j)+'</div>'
       + '<div class="cell cell-acts"><div class="rowacts">'
@@ -1315,11 +1373,9 @@
 
     if(act==="open"){ openJob(j.id); return; }
     if(act==="notes"){ openJob(j.id,"notes"); return; }
-    if(act==="cycle"){
-      var i=STATUSES.findIndex(function(s){ return s.id===j.status; });
-      j.status=STATUSES[(i+1)%STATUSES.length].id;
-      j.touched=todayISO();
-      save(); render();
+    if(act==="status"){
+      openStatusMenu(btn, j, function(){ save(); render(); });
+      return;
     }
     if(act==="dupe"){
       var copy=JSON.parse(JSON.stringify(j));
@@ -1348,6 +1404,70 @@
 
 
 
+
+
+  /* ---------------- status dropdown ---------------- */
+  var stMenu = null, stCleanup = null;
+
+  function closeStatusMenu(){
+    if(!stMenu) return;
+    stMenu.remove(); stMenu = null;
+    if(stCleanup){ stCleanup(); stCleanup = null; }
+  }
+
+  function openStatusMenu(anchor, job, after){
+    closeStatusMenu();
+
+    var menu = document.createElement("div");
+    menu.className = "stmenu";
+    menu.setAttribute("role","listbox");
+    menu.innerHTML = STATUSES.map(function(s){
+      return '<button type="button" role="option" data-st="'+s.id+'" aria-current="'+(s.id===job.status)+'">'
+           + '<i style="background:'+(s.id==="notstarted"?"#9AA0A6":s.color)+'"></i>'+esc(s.label)+'</button>';
+    }).join("");
+    document.body.appendChild(menu);
+
+    var r = anchor.getBoundingClientRect();
+    var mw = menu.offsetWidth, mh = menu.offsetHeight;
+    var left = Math.min(r.left, window.innerWidth - mw - 8);
+    var top  = (r.bottom + mh + 8 > window.innerHeight) ? (r.top - mh - 4) : (r.bottom + 4);
+    menu.style.left = Math.max(8, left) + "px";
+    menu.style.top  = Math.max(8, top) + "px";
+    menu.style.minWidth = Math.max(190, r.width) + "px";
+    stMenu = menu;
+
+    menu.addEventListener("click", function(e){
+      var b = e.target.closest("[data-st]"); if(!b) return;
+      job.status = b.dataset.st;
+      job.touched = todayISO();
+      save();
+      closeStatusMenu();
+      if(after) after();
+    });
+
+    var onDoc = function(e){ if(!menu.contains(e.target) && e.target!==anchor) closeStatusMenu(); };
+    var onKey = function(e){
+      if(e.key==="Escape"){ e.stopPropagation(); closeStatusMenu(); anchor.focus(); return; }
+      var btns = Array.prototype.slice.call(menu.querySelectorAll("button"));
+      var i = btns.indexOf(document.activeElement);
+      if(e.key==="ArrowDown"){ e.preventDefault(); btns[(i+1+btns.length)%btns.length].focus(); }
+      if(e.key==="ArrowUp"){ e.preventDefault(); btns[(i-1+btns.length)%btns.length].focus(); }
+    };
+    setTimeout(function(){ document.addEventListener("mousedown", onDoc); }, 0);
+    document.addEventListener("keydown", onKey, true);
+    window.addEventListener("scroll", closeStatusMenu, true);
+    window.addEventListener("resize", closeStatusMenu);
+
+    stCleanup = function(){
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("scroll", closeStatusMenu, true);
+      window.removeEventListener("resize", closeStatusMenu);
+    };
+
+    var cur = menu.querySelector('[aria-current="true"]') || menu.querySelector("button");
+    if(cur) cur.focus();
+  }
 
   /* ---------------- weekly reset (Tuesday) ---------------- */
   var lastPurge = "";
@@ -1505,6 +1625,8 @@
 
   var rzCol = null, rzStartX = 0, rzStartW = 0, rzEl = null;
 
+  var rzGuide = null, rzLabel = null;
+
   document.addEventListener("mousedown", function(e){
     var h = e.target.closest(".rz");
     if(!h) return;
@@ -1517,6 +1639,18 @@
     var cells = document.querySelectorAll(".thead > span");
     rzStartW = cells[rzCol+1].getBoundingClientRect().width;
     rzStartX = e.clientX;
+
+    rzGuide = document.createElement("div");
+    rzGuide.className = "rzguide";
+    rzGuide.style.left = e.clientX + "px";
+    document.body.appendChild(rzGuide);
+
+    rzLabel = document.createElement("div");
+    rzLabel.className = "rzsize";
+    rzLabel.textContent = Math.round(rzStartW) + " px";
+    rzLabel.style.left = e.clientX + "px";
+    rzLabel.style.top = (e.clientY - 30) + "px";
+    document.body.appendChild(rzLabel);
   });
 
   document.addEventListener("mousemove", function(e){
@@ -1524,12 +1658,20 @@
     var w = Math.max(COL_MIN[rzCol], Math.round(rzStartW + (e.clientX - rzStartX)));
     colW[rzCol] = w;
     applyCols();
+    if(rzGuide) rzGuide.style.left = e.clientX + "px";
+    if(rzLabel){
+      rzLabel.style.left = e.clientX + "px";
+      rzLabel.style.top = (e.clientY - 30) + "px";
+      rzLabel.textContent = w + " px";
+    }
   });
 
   document.addEventListener("mouseup", function(){
     if(rzCol === null) return;
     if(rzEl) rzEl.classList.remove("on");
     document.body.classList.remove("resizing");
+    if(rzGuide){ rzGuide.remove(); rzGuide = null; }
+    if(rzLabel){ rzLabel.remove(); rzLabel = null; }
     rzCol = null; rzEl = null;
     saveCols();
   });
@@ -1782,11 +1924,22 @@
 
   document.getElementById("mStatus").addEventListener("click", function(){
     var j = find(openId); if(!j) return;
-    var i = STATUSES.findIndex(function(s){ return s.id===j.status; });
-    j.status = STATUSES[(i+1)%STATUSES.length].id;
-    j.touched = todayISO(); save();
-    paintStatus(j); paintRel(j);
+    var btn = this;
+    openStatusMenu(btn, j, function(){
+      paintStatus(j); paintRel(j);
+      syncStatusRow(j);
+    });
   });
+
+  function syncStatusRow(j){
+    var row = $rows.querySelector('[data-id="'+j.id+'"]');
+    if(!row) return;
+    var s = statusOf(j.status);
+    var b = row.querySelector(".status");
+    if(b){ b.className = "status " + s.cls; b.textContent = s.label; }
+    row.classList.toggle("is-done", j.status==="done");
+    row.classList.toggle("is-overdue", isOverdue(j));
+  }
 
   /* keep the row underneath in step without a full re-render */
   function syncRow(j, field){
