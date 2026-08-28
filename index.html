@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Docket</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#17181A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Job Docket">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png">
 <style>
   :root{
     --stock:#E8E6E1;
@@ -679,6 +687,7 @@
     <button class="btn quiet" id="exportBtn">Export</button>
     <button class="btn quiet" id="importBtn">Import</button>
     <button class="btn quiet" id="printBtn">Print</button>
+    <button class="btn quiet hidden" id="installBtn">Install app</button>
     <button class="btn quiet" id="themeBtn">Dark</button>
     <button class="btn quiet" id="keysBtn">?</button>
     <input type="file" id="fileIn" accept="application/json" hidden>
@@ -1406,6 +1415,46 @@
 
 
 
+
+
+  /* ---------------- install as an app ---------------- */
+  if("serviceWorker" in navigator && location.protocol !== "file:"){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+  }
+
+  var deferredPrompt = null;
+  var $install = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+    $install.classList.remove("hidden");
+  });
+
+  $install.addEventListener("click", function(){
+    if(!deferredPrompt){
+      toast("Use your browser menu → Install");
+      return;
+    }
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(){
+      deferredPrompt = null;
+      $install.classList.add("hidden");
+    });
+  });
+
+  window.addEventListener("appinstalled", function(){
+    $install.classList.add("hidden");
+    toast("Installed — open it from your dock");
+  });
+
+  /* Running as an installed app? Note it in the footer. */
+  if(window.matchMedia && matchMedia("(display-mode: standalone)").matches){
+    var src = document.getElementById("source");
+    if(src) src.textContent = "App mode · saved on this device";
+  }
 
   /* ---------------- status dropdown ---------------- */
   var stMenu = null, stCleanup = null;
