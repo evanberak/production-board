@@ -28,7 +28,7 @@
     --done:#3F7A4E;
     --flash:#FFF6C0;
     --pad:4px;
-    --cols:18px minmax(0,3fr) minmax(0,1.15fr) 116px 158px minmax(0,1fr) minmax(0,1.9fr) 56px;
+    --cols:18px minmax(0,3fr) minmax(0,1.15fr) 116px 158px minmax(0,1fr) minmax(0,1.9fr) 78px;
   }
   html[data-theme="dark"]{
     --stock:#16171A;
@@ -608,6 +608,82 @@
   .stmenu button[aria-current="true"]{background:rgba(128,128,128,.14);}
   .stmenu button[aria-current="true"]::after{content:"✓";margin-left:auto;opacity:.6;}
 
+
+  /* ---------- today board ---------- */
+  .todaywrap{
+    border:1px solid var(--ink);background:var(--stock-2);
+    margin:0 0 16px;
+  }
+  .todaybar{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    border-bottom:1px solid var(--rule);padding:10px 13px;
+  }
+  .todaybar h3{
+    margin:0;font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--ink);
+  }
+  .todaybar .n{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-30);
+  }
+  .todaybar .sp{flex:1;}
+  .todaybar button{
+    appearance:none;background:transparent;border:1px solid var(--rule);color:var(--ink-60);
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:5px 9px;cursor:pointer;
+  }
+  .todaybar button:hover{background:var(--ink-60);color:var(--stock);border-color:var(--ink-60);}
+
+  .todaygrid{display:flex;flex-wrap:wrap;gap:0;}
+  .tcard{
+    flex:1 1 300px;min-width:0;
+    border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    padding:11px 13px 12px;position:relative;
+  }
+  .tcard.is-overdue{box-shadow:inset 3px 0 0 var(--reg);}
+  .tcard.is-done{opacity:.55;}
+  .tcard.is-done .tname{text-decoration:line-through;}
+  .thead-row{display:flex;align-items:flex-start;gap:9px;}
+  .tname{
+    flex:1;background:transparent;border:0;font:inherit;font-size:15.5px;font-weight:600;
+    color:var(--ink);padding:3px 5px;margin:-3px -5px;border-radius:2px;min-width:0;
+  }
+  .tname:hover{background:rgba(128,128,128,.12);}
+  .tname:focus{outline:0;background:var(--paper);box-shadow:0 0 0 1px var(--ink);}
+  .tunpin{
+    appearance:none;background:0;border:0;cursor:pointer;color:var(--ink-30);
+    font-size:16px;line-height:1;padding:2px 3px;flex:0 0 auto;
+  }
+  .tunpin:hover{color:var(--reg);}
+  .tmeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;}
+  .tmeta .status{width:auto;min-width:132px;padding:7px 22px 7px 10px;font-size:10.5px;}
+  .tmeta .tdue{
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-30);
+  }
+  .tmeta .tdue.late{color:var(--reg);font-weight:700;}
+  .tnote{
+    display:block;width:100%;text-align:left;background:transparent;border:0;
+    font:inherit;font-size:13.5px;color:var(--ink-60);cursor:text;margin-top:8px;
+    padding:3px 5px;margin-left:-5px;border-radius:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .tnote:hover{background:rgba(128,128,128,.12);color:var(--ink);}
+  .tnote.blank{color:var(--ink-30);}
+  .tclock{
+    position:absolute;right:11px;bottom:9px;
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace;
+    font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-30);
+  }
+  .todayempty{padding:22px 14px;font-size:14px;color:var(--ink-60);}
+
+  .pin{
+    appearance:none;background:0;border:0;cursor:pointer;color:var(--ink-30);
+    font-size:14px;line-height:1;padding:2px 4px;
+  }
+  .pin:hover{color:var(--ink);}
+  .pin.on{color:var(--cyan);}
+
   .toast{
     position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
     background:var(--ink);color:var(--stock);padding:9px 14px;
@@ -650,7 +726,7 @@
   }
 
   @media print{
-    .colorbar,.toolbar,.addbar,.rowacts,.foot,.toast,.cats,.panel,.calnav,.strip,.cell-grip,.hintline,.scrim,.padwrap{display:none !important;}
+    .colorbar,.toolbar,.addbar,.rowacts,.foot,.toast,.cats,.panel,.calnav,.strip,.cell-grip,.hintline,.scrim,.padwrap,.todaybar button,.pin{display:none !important;}
     body{background:#fff;color:#000;}
     .sheet{max-width:none;padding:0;}
     .row{break-inside:avoid;}
@@ -745,6 +821,16 @@
       <input id="catInput" type="text" placeholder="New category name, then Enter" aria-label="New category">
       <button class="btn" id="catAdd">Add category</button>
     </div>
+  </section>
+
+  <section class="todaywrap hidden" id="todayWrap" aria-label="Today">
+    <div class="todaybar">
+      <h3>Today</h3>
+      <span class="n" id="todayCount"></span>
+      <span class="sp"></span>
+      <button type="button" id="todayClear">Clear all</button>
+    </div>
+    <div class="todaygrid" id="todayGrid"></div>
   </section>
 
   <div id="listView">
@@ -851,7 +937,7 @@
   ];
   var STATUS_ORDER = {waiting:0, proof:1, working:2, notstarted:3, done:4};
 
-  var jobs = [], categories = [], notes = [], archive = [];
+  var jobs = [], categories = [], notes = [], archive = [], today = [];
   var padId = null;
   var filter="all", query="", blockedOnly=false, hideDone=false;
   var sortKey="manual", sortDir=1, view="list";
@@ -871,6 +957,7 @@
         jobs = d.jobs || []; categories = d.categories || [];
         notes = Array.isArray(d.notes) ? d.notes : [];
         archive = Array.isArray(d.archive) ? d.archive : [];
+        today = Array.isArray(d.today) ? d.today : [];
         lastPurge = d.lastPurge || "";
         normalizeOrder(); return;
       }
@@ -886,7 +973,7 @@
     normalizeOrder(); save();
   }
   function save(){
-    try{ localStorage.setItem(KEY, JSON.stringify({version:4, savedAt:new Date().toISOString(), categories:categories, jobs:jobs, notes:notes, archive:archive, lastPurge:lastPurge})); }
+    try{ localStorage.setItem(KEY, JSON.stringify({version:4, savedAt:new Date().toISOString(), categories:categories, jobs:jobs, notes:notes, archive:archive, today:today, lastPurge:lastPurge})); }
     catch(e){ toast("Could not save — storage blocked"); }
   }
   function normalizeOrder(){
@@ -1173,6 +1260,7 @@
       + '<div class="cell cell-waiting"><input type="text" data-f="waiting" value="'+esc(j.waiting)+'" placeholder="—" aria-label="Waiting on"></div>'
       + '<div class="cell cell-notes">'+noteLine(j)+'</div>'
       + '<div class="cell cell-acts"><div class="rowacts">'
+      +   '<button type="button" class="pin'+(onToday(j.id)?" on":"")+'" data-act="pin" title="'+(onToday(j.id)?"On Today":"Add to Today")+'">'+(onToday(j.id)?"●":"○")+'</button>'
       +   '<button type="button" class="mini" data-act="open" title="Open (Space)">⤢</button>'
       +   '<button type="button" class="mini" data-act="dupe" title="Duplicate">⧉</button>'
       +   '<button type="button" class="mini del" data-act="del" title="Delete">×</button>'
@@ -1286,6 +1374,7 @@
     buildHandles();
     renderBar(); renderStrip(); renderCats();
     if(view==="list") renderList(); else renderCal();
+    renderToday();
     document.getElementById("listView").classList.toggle("hidden", view!=="list");
     document.getElementById("calView").classList.toggle("hidden", view!=="cal");
     document.getElementById("viewBtn").textContent = view==="list" ? "Month view" : "List view";
@@ -1381,6 +1470,7 @@
     var row=btn.closest(".row"), j=find(row.dataset.id); if(!j) return;
     var act=btn.dataset.act;
 
+    if(act==="pin"){ pinToday(j.id); return; }
     if(act==="open"){ openJob(j.id); return; }
     if(act==="notes"){ openJob(j.id,"notes"); return; }
     if(act==="status"){
@@ -1416,6 +1506,119 @@
 
 
 
+
+
+  /* ---------------- today board ---------------- */
+  var DAY_MS = 24*60*60*1000;
+
+  function pruneToday(){
+    var now = Date.now();
+    var before = today.length;
+    today = today.filter(function(t){
+      if(!find(t.id)) return false;                       // job was deleted
+      return (now - new Date(t.added).getTime()) < DAY_MS; // still inside 24h
+    });
+    return before !== today.length;
+  }
+
+  function onToday(id){
+    for(var i=0;i<today.length;i++){ if(today[i].id===id) return today[i]; }
+    return null;
+  }
+
+  function pinToday(id){
+    if(onToday(id)){
+      today = today.filter(function(t){ return t.id!==id; });
+      save(); render();
+      toast("Removed from Today");
+      return;
+    }
+    today.unshift({id:id, added:new Date().toISOString()});
+    save(); render();
+    toast("Added to Today — clears in 24 hours");
+  }
+
+  function hoursLeft(t){
+    var ms = DAY_MS - (Date.now() - new Date(t.added).getTime());
+    if(ms <= 0) return "expired";
+    var h = Math.floor(ms/3600000);
+    if(h >= 1) return h + "h left";
+    return Math.max(1, Math.round(ms/60000)) + "m left";
+  }
+
+  function renderToday(){
+    pruneToday();
+    var wrap = document.getElementById("todayWrap");
+    wrap.classList.toggle("hidden", today.length === 0);
+    if(!today.length) return;
+
+    document.getElementById("todayCount").textContent =
+      today.length + " task" + (today.length===1?"":"s") + " · mirrors the board";
+
+    document.getElementById("todayGrid").innerHTML = today.map(function(t){
+      var j = find(t.id);
+      if(!j) return "";
+      var st = statusOf(j.status);
+      var raw = (j.notes||"").replace(/\s+/g," ").trim();
+      var shown = raw ? (raw.length>64 ? raw.slice(0,64)+"…" : raw) : "Add a note…";
+      var cls = "tcard" + (isOverdue(j)?" is-overdue":"") + (j.status==="done"?" is-done":"");
+      return '<div class="'+cls+'" data-tid="'+j.id+'">'
+        + '<div class="thead-row">'
+        +   '<input class="tname" type="text" data-tf="task" value="'+esc(j.task)+'" aria-label="Task">'
+        +   '<button class="tunpin" type="button" data-tact="unpin" title="Remove from Today">&times;</button>'
+        + '</div>'
+        + '<div class="tmeta">'
+        +   '<button type="button" class="status '+st.cls+'" data-tact="status">'+esc(st.label)+'</button>'
+        +   (j.due ? '<span class="tdue'+(isOverdue(j)?" late":"")+'">'+esc(relDue(j.due))+'</span>' : '<span class="tdue">no date</span>')
+        + '</div>'
+        + '<button type="button" class="tnote'+(raw?"":" blank")+'" data-tact="notes" title="'+esc(raw||"Add a note")+'">'+esc(shown)+'</button>'
+        + '<span class="tclock">'+esc(hoursLeft(t))+'</span>'
+        + '</div>';
+    }).join("");
+  }
+
+  document.getElementById("todayGrid").addEventListener("input", function(e){
+    if(e.target.dataset.tf !== "task") return;
+    var card = e.target.closest("[data-tid]");
+    var j = find(card.dataset.tid); if(!j) return;
+    j.task = e.target.value; j.touched = todayISO();
+    save();
+    var row = $rows.querySelector('[data-id="'+j.id+'"]');
+    if(row){
+      var inp = row.querySelector('[data-f="task"]');
+      if(inp && inp.value !== j.task) inp.value = j.task;
+    }
+  });
+
+  document.getElementById("todayGrid").addEventListener("click", function(e){
+    var b = e.target.closest("[data-tact]"); if(!b) return;
+    var card = b.closest("[data-tid]");
+    var j = find(card.dataset.tid); if(!j) return;
+    var act = b.dataset.tact;
+
+    if(act==="unpin"){ pinToday(j.id); return; }
+    if(act==="notes"){ openJob(j.id, "notes"); return; }
+    if(act==="status"){
+      openStatusMenu(b, j, function(){ save(); render(); });
+      return;
+    }
+  });
+
+  document.getElementById("todayClear").addEventListener("click", function(){
+    if(!today.length) return;
+    if(!confirm("Clear the Today board? The jobs themselves stay on the main board.")) return;
+    today = [];
+    save(); render();
+    toast("Today cleared");
+  });
+
+  /* tick the countdown and drop anything past 24h */
+  setInterval(function(){
+    if(!today.length) return;
+    var changed = pruneToday();
+    if(changed){ save(); render(); }
+    else renderToday();
+  }, 60000);
 
   /* ---------------- install as an app ---------------- */
   if("serviceWorker" in navigator && location.protocol !== "file:"){
@@ -2234,7 +2437,7 @@
 
   /* ---------------- export / import / fetch ---------------- */
   function payload(){
-    return {version:4, savedAt:new Date().toISOString(), categories:categories, jobs:jobs, notes:notes, archive:archive, lastPurge:lastPurge};
+    return {version:4, savedAt:new Date().toISOString(), categories:categories, jobs:jobs, notes:notes, archive:archive, today:today, lastPurge:lastPurge};
   }
   document.getElementById("exportBtn").addEventListener("click", doExport);
   function doExport(){
@@ -2285,6 +2488,7 @@
     categories = norm.categories || uniqueProjects();
     if(data && Array.isArray(data.notes)) notes = data.notes;
     if(data && Array.isArray(data.archive)) archive = data.archive;
+    if(data && Array.isArray(data.today)) today = data.today;
     if(data && data.lastPurge) lastPurge = data.lastPurge;
     normalizeOrder(); save(); render();
     document.getElementById("source").textContent="Loaded "+label;
@@ -2393,6 +2597,7 @@
   loadCols();
   buildHandles();
   load();
+  pruneToday();
   runWeeklyPurge();
   render();
   renderPad();
