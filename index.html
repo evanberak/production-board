@@ -2871,13 +2871,20 @@
 
   /* ---------------- keyboard ---------------- */
   document.addEventListener("keydown", function(e){
-    var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+    var t = e.target;
+    var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)
+              || t.isContentEditable === true
+              || !!(t.closest && t.closest('[contenteditable="true"]'))
+              || !!(t.closest && t.closest("#modal"))
+              || !!(t.closest && t.closest("#notepad"))
+              || openId !== null;
 
     if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z" && !typing){
       e.preventDefault(); undoDelete(); return;
     }
     if(e.key==="Escape"){
       if(openId){ e.preventDefault(); closeJob(); return; }
+      if(t.isContentEditable){ t.blur(); return; }
       document.getElementById("keys").classList.add("hidden");
       document.getElementById("standup").classList.add("hidden");
       document.getElementById("notepad").classList.add("hidden");
